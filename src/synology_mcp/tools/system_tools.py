@@ -41,10 +41,10 @@ def register_system_tools(mcp, conn_mgr) -> None:
             config = conn_mgr.config
 
             nas_list = []
-            for nas_cfg in config.nas_configs:
+            for nas_cfg in config.nas_configs.values():
                 name = nas_cfg.name
                 active_services = [
-                    svc for (n, svc) in connections if n == name
+                    c["service"] for c in connections if c["nas"] == name
                 ]
                 nas_list.append({
                     "name": name,
@@ -197,7 +197,7 @@ def register_system_tools(mcp, conn_mgr) -> None:
             },
             "configured_nas": [
                 {"name": c.name, "host": c.host, "is_default": c.name == config.default_nas}
-                for c in config.nas_configs
+                for c in config.nas_configs.values()
             ],
         }
         # Count total tools

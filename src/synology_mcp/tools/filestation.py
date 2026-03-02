@@ -11,6 +11,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, ConfigDict
 
+import re
+
 from ..utils.formatters import (
     ResponseFormat,
     format_size,
@@ -19,6 +21,22 @@ from ..utils.formatters import (
     error_response,
     paginate_list,
 )
+
+
+def _extract_taskid(result) -> str | None:
+    """Extract taskid from synology-api task result.
+
+    synology-api task methods return either:
+    - dict with "taskid" key (when interactive_output=False)
+    - string containing "task id is: <taskid>" (when interactive_output=True, default)
+    """
+    if isinstance(result, dict) and "taskid" in result:
+        return result["taskid"]
+    if isinstance(result, str):
+        m = re.search(r"task id is:\s*(\S+)", result)
+        if m:
+            return m.group(1)
+    return None
 
 
 # ── Input Models ──────────────────────────────────────────────────────
@@ -436,16 +454,15 @@ def register_filestation_tools(mcp, conn_mgr) -> None:
         try:
             fs = _fs(params.nas)
             paths_list = [p.strip() for p in params.paths.split(",") if p.strip()]
-            path_str = json.dumps(paths_list)
             result = fs.start_copy_move(
-                path=path_str,
+                path=paths_list if len(paths_list) > 1 else paths_list[0],
                 dest_folder_path=params.dest_folder,
                 overwrite=params.overwrite,
                 remove_src=params.remove_src,
             )
             op = "Move" if params.remove_src else "Copy"
-            if result and "data" in result:
-                taskid = result["data"].get("taskid", "")
+            taskid = _extract_taskid(result)
+            if taskid:
                 return json.dumps({
                     "status": "started",
                     "operation": op.lower(),
@@ -454,7 +471,7 @@ def register_filestation_tools(mcp, conn_mgr) -> None:
                     "destination": params.dest_folder,
                     "message": f"{op} task started. Use synology_list_background_tasks to check progress.",
                 }, indent=2)
-            return error_response(f"Failed to start {op.lower()} operation")
+            return error_response(f"Failed to start {op.lower()} operation: {result}")
         except Exception as e:
             return handle_synology_error(e, "Copy/Move")
 
@@ -472,17 +489,19 @@ def register_filestation_tools(mcp, conn_mgr) -> None:
         try:
             fs = _fs(params.nas)
             paths_list = [p.strip() for p in params.paths.split(",") if p.strip()]
-            path_str = json.dumps(paths_list)
-            result = fs.start_delete_task(path=path_str, recursive=params.recursive)
-            if result and "data" in result:
-                taskid = result["data"].get("taskid", "")
+            result = fs.start_delete_task(
+                path=paths_list if len(paths_list) > 1 else paths_list[0],
+                recursive=params.recursive,
+            )
+            taskid = _extract_taskid(result)
+            if taskid:
                 return json.dumps({
                     "status": "started",
                     "taskid": taskid,
                     "paths": paths_list,
                     "message": "Delete task started. Use synology_list_background_tasks to check progress.",
                 }, indent=2)
-            return error_response("Failed to start delete operation")
+            return error_response(f"Failed to start delete operation: {result}")
         except Exception as e:
             return handle_synology_error(e, "Delete")
 
@@ -497,21 +516,20 @@ def register_filestation_tools(mcp, conn_mgr) -> None:
         try:
             fs = _fs(params.nas)
             paths_list = [p.strip() for p in params.paths.split(",") if p.strip()]
-            path_str = json.dumps(paths_list)
             result = fs.start_file_compression(
-                path=path_str,
+                path=paths_list if len(paths_list) > 1 else paths_list[0],
                 dest_file_path=params.dest_file_path,
-                format=params.format,
+                compress_format=params.format,
             )
-            if result and "data" in result:
-                taskid = result["data"].get("taskid", "")
+            taskid = _extract_taskid(result)
+            if taskid:
                 return json.dumps({
                     "status": "started",
                     "taskid": taskid,
                     "destination": params.dest_file_path,
                     "format": params.format,
                 }, indent=2)
-            return error_response("Failed to start compression")
+            return error_response(f"Failed to start compression: {result}")
         except Exception as e:
             return handle_synology_error(e, "Compress")
 
@@ -531,8 +549,8 @@ def register_filestation_tools(mcp, conn_mgr) -> None:
                 overwrite=params.overwrite,
                 keep_dir=params.keep_dir,
             )
-            if result and "data" in result:
-                taskid = result["data"].get("taskid", "")
+            taskid = _extract_taskid(result)
+            if taskid:
                 return json.dumps({
                     "status": "started",
                     "taskid": taskid,
@@ -678,10 +696,25 @@ def register_filestation_tools(mcp, conn_mgr) -> None:
     async def synology_file_tree(params: FileTreeInput) -> str:
         """Generate a visual file tree for a directory, showing the folder structure up to a given depth."""
         try:
+            from treelib import Tree
+
             fs = _fs(params.nas)
-            result = fs.generate_file_tree(path=params.path)
-            if result and "data" in result:
-                return json.dumps(result["data"], indent=2, default=str)
-            return error_response("Failed to generate file tree")
+            tree = Tree()
+            # Create root node using the folder path as both tag and identifier
+            folder = params.path.rstrip("/")
+            root_name = folder.rsplit("/", 1)[-1] or folder
+            tree.create_node(root_name, folder)
+            max_depth = params.depth
+            fs.generate_file_tree(
+                folder_path=folder,
+                tree=tree,
+                max_depth=max_depth,
+            )
+            return tree.show(stdout=False) or "(empty)"
+        except ImportError:
+            return error_response(
+                "treelib package is required for file tree generation",
+                "Install with: pip install treelib",
+            )
         except Exception as e:
             return handle_synology_error(e, "File tree")
