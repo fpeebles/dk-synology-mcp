@@ -1,6 +1,6 @@
 [project]
 name = "synology-mcp"
-version = "0.1.0"
+version = "0.3.0"
 description = "Comprehensive MCP server for Synology NAS management — file operations, downloads, backups, Docker, photos, system monitoring, and more."
 readme = "README.md"
 license = {text = "MIT"}
