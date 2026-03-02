@@ -114,7 +114,7 @@ def register_task_scheduler_tools(mcp, conn_mgr) -> None:
         """Get the output/result from the last run of a scheduled task."""
         try:
             ts = _ts(params.nas)
-            result = ts.get_task_result(task_id=params.task_id)
+            result = ts.get_task_results(task_id=params.task_id)
             if not result or "data" not in result:
                 return error_response(f"No output for task {params.task_id}")
             return json.dumps(result["data"], indent=2, default=str)

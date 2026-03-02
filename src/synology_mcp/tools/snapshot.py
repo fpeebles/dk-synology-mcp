@@ -107,7 +107,7 @@ def register_snapshot_tools(mcp, conn_mgr) -> None:
         """Delete a snapshot by ID. This action cannot be undone."""
         try:
             snap = _snap(params.nas)
-            result = snap.delete_snapshot(snapshot_id=params.snapshot_id)
+            result = snap.delete_snapshots(snapshot_id=params.snapshot_id)
             return json.dumps({
                 "status": "success",
                 "action": "snapshot_deleted",
@@ -124,7 +124,7 @@ def register_snapshot_tools(mcp, conn_mgr) -> None:
         """List snapshot replication tasks (local and remote)."""
         try:
             snap = _snap(params.nas)
-            result = snap.list_replication_tasks()
+            result = snap.list_replication_plans()
             if not result or "data" not in result:
                 return error_response("Could not list replication tasks")
             tasks = result["data"].get("tasks", result["data"].get("list", []))

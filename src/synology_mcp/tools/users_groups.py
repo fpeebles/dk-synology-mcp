@@ -47,7 +47,7 @@ def register_users_groups_tools(mcp, conn_mgr) -> None:
         """List all local users on the NAS."""
         try:
             user = _user(params.nas)
-            result = user.get_list_user()
+            result = user.get_users()
             if not result or "data" not in result:
                 return error_response("Could not list users")
             users = result["data"].get("users", result["data"])
@@ -87,7 +87,7 @@ def register_users_groups_tools(mcp, conn_mgr) -> None:
         """List all local groups on the NAS."""
         try:
             group = _group(params.nas)
-            result = group.get_list_group()
+            result = group.get_groups()
             if not result or "data" not in result:
                 return error_response("Could not list groups")
             groups = result["data"].get("groups", result["data"])
@@ -111,7 +111,7 @@ def register_users_groups_tools(mcp, conn_mgr) -> None:
         """List all members of a specific group."""
         try:
             group = _group(params.nas)
-            result = group.get_group_member(name=params.group_name)
+            result = group.get_users(name=params.group_name)
             if not result or "data" not in result:
                 return error_response(f"Group '{params.group_name}' not found")
             members = result["data"].get("members", result["data"])

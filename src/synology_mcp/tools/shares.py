@@ -47,7 +47,7 @@ def register_shares_tools(mcp, conn_mgr) -> None:
         """List all shared folders with their volume, encryption, and recycle bin status."""
         try:
             share = _share(params.nas)
-            result = share.get_share_list()
+            result = share.list_folders()
             if not result or "data" not in result:
                 return error_response("Could not list shared folders")
             shares = result["data"].get("shares", result["data"])
@@ -73,7 +73,7 @@ def register_shares_tools(mcp, conn_mgr) -> None:
         """Get detailed info about a specific shared folder (volume, quota, encryption)."""
         try:
             share = _share(params.nas)
-            result = share.get_share_info(name=params.name)
+            result = share.get_folder(name=params.name)
             if not result or "data" not in result:
                 return error_response(f"Shared folder '{params.name}' not found")
             return json.dumps(result["data"], indent=2, default=str)
@@ -88,7 +88,7 @@ def register_shares_tools(mcp, conn_mgr) -> None:
         """Get permission (ACL) settings for a shared folder — who can read/write."""
         try:
             perm = _perm(params.nas)
-            result = perm.get_share_permission(name=params.name)
+            result = perm.get_folder_permissions(name=params.name)
             if not result or "data" not in result:
                 return error_response(f"Could not get permissions for '{params.name}'")
             return json.dumps(result["data"], indent=2, default=str)

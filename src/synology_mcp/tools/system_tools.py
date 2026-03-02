@@ -73,7 +73,7 @@ def register_system_tools(mcp, conn_mgr) -> None:
         """Test connectivity to a NAS by fetching basic DSM info."""
         try:
             client = conn_mgr.get_client("sysinfo", params.nas)
-            info = client.get_info()
+            info = client.get_system_info()
             if not info or "data" not in info:
                 return json.dumps({
                     "status": "error",

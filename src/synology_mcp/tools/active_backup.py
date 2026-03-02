@@ -44,7 +44,7 @@ def register_active_backup_tools(mcp, conn_mgr) -> None:
         """List all Active Backup for Business tasks (PC, server, VM)."""
         try:
             abb = _abb(params.nas)
-            result = abb.list_task_list()
+            result = abb.list_tasks()
             if not result or "data" not in result:
                 return error_response("Could not list Active Backup tasks")
             tasks = result["data"].get("task_list", result["data"].get("list", []))
@@ -71,7 +71,7 @@ def register_active_backup_tools(mcp, conn_mgr) -> None:
         """Get detailed information about an Active Backup task."""
         try:
             abb = _abb(params.nas)
-            result = abb.get_task_info(task_id=params.task_id)
+            result = abb.task_history(task_id=params.task_id)
             if not result or "data" not in result:
                 return error_response(f"Task {params.task_id} not found")
             return json.dumps(result["data"], indent=2, default=str)
@@ -86,7 +86,7 @@ def register_active_backup_tools(mcp, conn_mgr) -> None:
         """List all devices registered with Active Backup for Business."""
         try:
             abb = _abb(params.nas)
-            result = abb.list_device_list()
+            result = abb.list_device_transfer_size()
             if not result or "data" not in result:
                 return error_response("Could not list ABB devices")
             devices = result["data"].get("device_list", result["data"].get("list", []))
@@ -113,7 +113,7 @@ def register_active_backup_tools(mcp, conn_mgr) -> None:
         """Get detailed information about a registered backup device."""
         try:
             abb = _abb(params.nas)
-            result = abb.get_device_info(device_id=params.device_id)
+            result = abb.list_device_transfer_size(device_id=params.device_id)
             if not result or "data" not in result:
                 return error_response(f"Device {params.device_id} not found")
             return json.dumps(result["data"], indent=2, default=str)
@@ -153,7 +153,7 @@ def register_active_backup_tools(mcp, conn_mgr) -> None:
         """List available restore points for a device."""
         try:
             abb = _abb(params.nas)
-            result = abb.list_restore_points(device_id=params.device_id)
+            result = abb.result_details(device_id=params.device_id)
             if not result or "data" not in result:
                 return error_response(f"No restore points for device {params.device_id}")
             points = result["data"].get("restore_point_list", result["data"].get("list", []))

@@ -73,7 +73,7 @@ def register_cloudsync_tools(mcp, conn_mgr) -> None:
         """Get detailed status for a specific Cloud Sync connection."""
         try:
             cs = _cs(params.nas)
-            result = cs.get_connection_status(conn_id=params.connection_id)
+            result = cs.get_connection_information(conn_id=params.connection_id)
             if not result or "data" not in result:
                 return error_response(f"No status for connection {params.connection_id}")
             return json.dumps(result["data"], indent=2, default=str)
@@ -88,7 +88,7 @@ def register_cloudsync_tools(mcp, conn_mgr) -> None:
         """Pause a Cloud Sync connection."""
         try:
             cs = _cs(params.nas)
-            result = cs.pause_connection(conn_id=params.connection_id)
+            result = cs.connection_pause(conn_id=params.connection_id)
             return json.dumps({"status": "success", "action": "paused", "connection_id": params.connection_id}, indent=2)
         except Exception as e:
             return handle_synology_error(e, "Pause Cloud Sync")
@@ -101,7 +101,7 @@ def register_cloudsync_tools(mcp, conn_mgr) -> None:
         """Resume a paused Cloud Sync connection."""
         try:
             cs = _cs(params.nas)
-            result = cs.resume_connection(conn_id=params.connection_id)
+            result = cs.connection_resume(conn_id=params.connection_id)
             return json.dumps({"status": "success", "action": "resumed", "connection_id": params.connection_id}, indent=2)
         except Exception as e:
             return handle_synology_error(e, "Resume Cloud Sync")
@@ -114,7 +114,7 @@ def register_cloudsync_tools(mcp, conn_mgr) -> None:
         """Get recent sync logs for a Cloud Sync connection."""
         try:
             cs = _cs(params.nas)
-            result = cs.get_connection_log(conn_id=params.connection_id, offset=params.offset, limit=params.limit)
+            result = cs.get_connection_logs(conn_id=params.connection_id, offset=params.offset, limit=params.limit)
             if not result or "data" not in result:
                 return error_response("Could not retrieve Cloud Sync logs")
             return json.dumps(result["data"], indent=2, default=str)

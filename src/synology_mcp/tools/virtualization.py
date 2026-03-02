@@ -38,7 +38,7 @@ def register_virtualization_tools(mcp, conn_mgr) -> None:
         """List all virtual machines with status, CPU, and memory info."""
         try:
             virt = _virt(params.nas)
-            result = virt.get_guest_list()
+            result = virt.get_images_list()
             if not result or "data" not in result:
                 return error_response("Could not list virtual machines")
             guests = result["data"].get("guests", result["data"])
@@ -64,7 +64,7 @@ def register_virtualization_tools(mcp, conn_mgr) -> None:
         """Get detailed information about a virtual machine."""
         try:
             virt = _virt(params.nas)
-            result = virt.get_guest_info(guest_id=params.guest_id)
+            result = virt.get_specific_vm_info(guest_id=params.guest_id)
             if not result or "data" not in result:
                 return error_response(f"VM '{params.guest_id}' not found")
             return json.dumps(result["data"], indent=2, default=str)
@@ -79,7 +79,7 @@ def register_virtualization_tools(mcp, conn_mgr) -> None:
         """Power on a virtual machine."""
         try:
             virt = _virt(params.nas)
-            result = virt.poweron_guest(guest_id=params.guest_id)
+            result = virt.vm_power_on(guest_id=params.guest_id)
             return json.dumps({"status": "success", "action": "poweron", "guest_id": params.guest_id}, indent=2)
         except Exception as e:
             return handle_synology_error(e, "Power on VM")
@@ -92,7 +92,7 @@ def register_virtualization_tools(mcp, conn_mgr) -> None:
         """Force power off a virtual machine (like pulling the power cord)."""
         try:
             virt = _virt(params.nas)
-            result = virt.poweroff_guest(guest_id=params.guest_id)
+            result = virt.vm_force_power_off(guest_id=params.guest_id)
             return json.dumps({"status": "success", "action": "poweroff", "guest_id": params.guest_id}, indent=2)
         except Exception as e:
             return handle_synology_error(e, "Power off VM")
@@ -105,7 +105,7 @@ def register_virtualization_tools(mcp, conn_mgr) -> None:
         """Gracefully shut down a virtual machine (sends ACPI shutdown signal)."""
         try:
             virt = _virt(params.nas)
-            result = virt.shutdown_guest(guest_id=params.guest_id)
+            result = virt.vm_shut_down(guest_id=params.guest_id)
             return json.dumps({"status": "success", "action": "shutdown", "guest_id": params.guest_id}, indent=2)
         except Exception as e:
             return handle_synology_error(e, "Shutdown VM")

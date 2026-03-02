@@ -55,7 +55,7 @@ def register_photos_tools(mcp, conn_mgr) -> None:
         """List all photo albums on Synology Photos."""
         try:
             ph = _photos(params.nas)
-            result = ph.get_albums()
+            result = ph.list_albums()
             if not result or "data" not in result:
                 return error_response("Could not list albums")
             albums = result["data"].get("list", result["data"])
@@ -83,7 +83,7 @@ def register_photos_tools(mcp, conn_mgr) -> None:
             kwargs = {"offset": params.offset, "limit": params.limit}
             if params.folder_id is not None:
                 kwargs["folder_id"] = params.folder_id
-            result = ph.get_items(**kwargs)
+            result = ph.list_item_in_folders(**kwargs)
             if not result or "data" not in result:
                 return error_response("Could not browse photos")
             items_data = result["data"].get("list", [])
@@ -112,7 +112,7 @@ def register_photos_tools(mcp, conn_mgr) -> None:
         """Search photos by keyword (filename, tag, or description)."""
         try:
             ph = _photos(params.nas)
-            result = ph.search(keyword=params.keyword, limit=params.limit)
+            result = ph.list_search_filters(keyword=params.keyword, limit=params.limit)
             if not result or "data" not in result:
                 return error_response("Search returned no results")
             items = result["data"].get("list", [])
@@ -132,7 +132,7 @@ def register_photos_tools(mcp, conn_mgr) -> None:
         """List photos/videos within a specific album."""
         try:
             ph = _photos(params.nas)
-            result = ph.get_album_items(
+            result = ph.get_album(
                 album_id=params.album_id,
                 offset=params.offset,
                 limit=params.limit,

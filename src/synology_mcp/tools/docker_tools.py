@@ -45,7 +45,7 @@ def register_docker_tools(mcp, conn_mgr) -> None:
         """List all Docker containers with status, image, ports, and resource usage."""
         try:
             docker = _docker(params.nas)
-            result = docker.get_containers()
+            result = docker.containers()
             if not result or "data" not in result:
                 return error_response("Could not list containers")
             containers = result["data"].get("containers", result["data"])
@@ -97,7 +97,8 @@ def register_docker_tools(mcp, conn_mgr) -> None:
         """Restart a Docker container."""
         try:
             docker = _docker(params.nas)
-            result = docker.restart_container(name=params.container_name)
+            docker.stop_container(name=params.container_name)
+            docker.start_container(name=params.container_name)
             return json.dumps({"status": "success", "action": "restarted", "container": params.container_name}, indent=2)
         except Exception as e:
             return handle_synology_error(e, "Restart container")
@@ -110,7 +111,7 @@ def register_docker_tools(mcp, conn_mgr) -> None:
         """Get recent logs from a Docker container."""
         try:
             docker = _docker(params.nas)
-            result = docker.get_container_log(name=params.container_name)
+            result = docker.get_logs(name=params.container_name)
             if not result or "data" not in result:
                 return error_response(f"Could not get logs for '{params.container_name}'")
             logs = result["data"].get("logs", result["data"])
@@ -128,7 +129,7 @@ def register_docker_tools(mcp, conn_mgr) -> None:
         """List all Docker images on the NAS."""
         try:
             docker = _docker(params.nas)
-            result = docker.get_images()
+            result = docker.downloaded_images()
             if not result or "data" not in result:
                 return error_response("Could not list images")
             images = result["data"].get("images", result["data"])
@@ -153,7 +154,7 @@ def register_docker_tools(mcp, conn_mgr) -> None:
         """List all Docker networks on the NAS."""
         try:
             docker = _docker(params.nas)
-            result = docker.get_networks()
+            result = docker.network()
             if not result or "data" not in result:
                 return error_response("Could not list networks")
             return json.dumps(result["data"], indent=2, default=str)
@@ -168,7 +169,7 @@ def register_docker_tools(mcp, conn_mgr) -> None:
         """Get resource usage summary for all Docker containers."""
         try:
             docker = _docker(params.nas)
-            result = docker.get_resources()
+            result = docker.container_resources()
             if not result or "data" not in result:
                 return error_response("Could not retrieve Docker resource usage")
             return json.dumps(result["data"], indent=2, default=str)

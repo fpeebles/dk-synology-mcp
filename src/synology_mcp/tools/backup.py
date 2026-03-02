@@ -111,7 +111,7 @@ def register_backup_tools(mcp, conn_mgr) -> None:
         """Start an integrity check on a backup task to verify data consistency."""
         try:
             bk = _bk(params.nas)
-            result = bk.backup_task_result(task_id=params.task_id)
+            result = bk.integrity_check_run(task_id=params.task_id)
             if not result or "data" not in result:
                 return error_response("Could not start integrity check")
             return json.dumps(result["data"], indent=2, default=str)

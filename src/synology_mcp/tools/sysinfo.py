@@ -62,7 +62,7 @@ def register_sysinfo_tools(mcp, conn_mgr) -> None:
         """Get Synology DSM version, model, serial number, uptime, and system status."""
         try:
             sys_client = _sys(params.nas)
-            result = sys_client.get_dsm_info()
+            result = sys_client.dsm_info()
             if not result or "data" not in result:
                 return error_response("Could not retrieve DSM info")
             data = result["data"]
@@ -97,7 +97,7 @@ def register_sysinfo_tools(mcp, conn_mgr) -> None:
         """Get current CPU, memory, and swap utilization of the NAS."""
         try:
             sys_client = _sys(params.nas)
-            result = sys_client.get_system_utilization()
+            result = sys_client.get_all_system_utilization()
             if not result or "data" not in result:
                 return error_response("Could not retrieve utilization data")
             data = result["data"]
@@ -143,7 +143,7 @@ def register_sysinfo_tools(mcp, conn_mgr) -> None:
         """Get storage pool, volume, and disk information — sizes, health, RAID status."""
         try:
             sys_client = _sys(params.nas)
-            result = sys_client.get_storage_info()
+            result = sys_client.storage()
             if not result or "data" not in result:
                 return error_response("Could not retrieve storage info")
             data = result["data"]
@@ -224,7 +224,7 @@ def register_sysinfo_tools(mcp, conn_mgr) -> None:
         """List all services and their current running/stopped status on the NAS."""
         try:
             sys_client = _sys(params.nas)
-            result = sys_client.get_all_service()
+            result = sys_client.services_status()
             if not result or "data" not in result:
                 return error_response("Could not retrieve services list")
             services = result["data"].get("services", result["data"])
@@ -250,7 +250,7 @@ def register_sysinfo_tools(mcp, conn_mgr) -> None:
 
             # DSM info
             try:
-                dsm = sys_client.get_dsm_info()
+                dsm = sys_client.dsm_info()
                 if dsm and "data" in dsm:
                     d = dsm["data"]
                     uptime = int(d.get("uptime", 0))
@@ -269,7 +269,7 @@ def register_sysinfo_tools(mcp, conn_mgr) -> None:
 
             # Utilization
             try:
-                util = sys_client.get_system_utilization()
+                util = sys_client.get_all_system_utilization()
                 if util and "data" in util:
                     cpu = util["data"].get("cpu", {})
                     mem = util["data"].get("memory", {})
@@ -285,7 +285,7 @@ def register_sysinfo_tools(mcp, conn_mgr) -> None:
 
             # Storage summary
             try:
-                storage = sys_client.get_storage_info()
+                storage = sys_client.storage()
                 if storage and "data" in storage:
                     vols = storage["data"].get("volumes", storage["data"].get("vol_info", []))
                     vol_summary = []
