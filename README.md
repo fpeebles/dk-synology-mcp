@@ -4,7 +4,7 @@ Comprehensive Synology NAS management through the [Model Context Protocol](https
 
 ## Features
 
-- **80+ tools** across 15 service categories
+- **87 tools** across 15 service categories
 - **Multi-NAS support** — manage up to 9 NAS units from a single server
 - **DSM 7 and DSM 6** compatibility
 - **Secure connections** — HTTPS with optional certificate verification
@@ -38,69 +38,112 @@ Comprehensive Synology NAS management through the [Model Context Protocol](https
 - One or more Synology NAS units with DSM 6.x or 7.x
 - An admin (or delegated) account on each NAS
 
-### Install from source
+### Install from source (recommended)
+
+macOS with Homebrew Python requires a virtual environment:
 
 ```bash
-git clone https://github.com/your-username/synology-mcp.git
-cd synology-mcp
+git clone https://github.com/DRVBSS/dk-synology-mcp.git
+cd dk-synology-mcp
+python3 -m venv .venv
+source .venv/bin/activate
 pip install .
 ```
+
+The `.venv` folder is already in `.gitignore` and won't be committed.
 
 ### Install in development mode
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e ".[dev]"
+```
+
+### Verify installation
+
+```bash
+# With venv activated:
+synology-mcp --help
+
+# Or without activating:
+.venv/bin/synology-mcp --help
 ```
 
 ## Configuration
 
-All configuration is done through environment variables. Copy the example and fill in your NAS details:
+### Step 1: Find your Synology NAS connection details
+
+Before configuring the server, gather these details from each NAS:
+
+1. **Host/IP**: Your NAS IP address (e.g., `192.168.1.100`). Find it in DSM under Control Panel > Network > Network Interface.
+2. **Port**: Default is `5000` (HTTP) or `5001` (HTTPS). Find it in Control Panel > Login Portal > DSM tab.
+3. **Username/Password**: An admin account, or a user with delegated admin permissions. For security, consider creating a dedicated service account:
+   - Go to Control Panel > User & Group > Create
+   - Name it something like `mcp-service`
+   - Add it to the `administrators` group (required for most API access)
+   - Give it a strong password
+4. **HTTPS**: Set `SECURE=true` and `PORT=5001` for HTTPS (recommended). Set `CERT_VERIFY=false` if using a self-signed certificate (common on home NAS).
+5. **DSM Version**: Use `7` for DSM 7.x or `6` for DSM 6.x. Check in Control Panel > Info Center.
+
+### Step 2: Create your .env file
 
 ```bash
 cp .env.example .env
 ```
 
-### Single NAS
+Edit `.env` with your NAS details:
+
+#### Single NAS setup
 
 ```env
+# === Your NAS ===
 SYNOLOGY_NAS1_NAME=ds923
 SYNOLOGY_NAS1_HOST=192.168.1.100
 SYNOLOGY_NAS1_PORT=5001
-SYNOLOGY_NAS1_USERNAME=admin
-SYNOLOGY_NAS1_PASSWORD=your-password
+SYNOLOGY_NAS1_USERNAME=mcp-service
+SYNOLOGY_NAS1_PASSWORD=your-strong-password
 SYNOLOGY_NAS1_SECURE=true
 SYNOLOGY_NAS1_CERT_VERIFY=false
 SYNOLOGY_NAS1_DSM_VERSION=7
+SYNOLOGY_NAS1_OTP_CODE=
 
+# === Server Settings ===
 SYNOLOGY_DEFAULT_NAS=ds923
-LOG_LEVEL=INFO
+SYNOLOGY_LOG_LEVEL=INFO
 ```
 
-### Multi-NAS
+#### Multi-NAS setup
 
 Add additional NAS units with incrementing numbers (up to 9):
 
 ```env
+# === Primary NAS ===
 SYNOLOGY_NAS1_NAME=ds923
 SYNOLOGY_NAS1_HOST=192.168.1.100
 SYNOLOGY_NAS1_PORT=5001
-SYNOLOGY_NAS1_USERNAME=admin
-SYNOLOGY_NAS1_PASSWORD=password1
+SYNOLOGY_NAS1_USERNAME=mcp-service
+SYNOLOGY_NAS1_PASSWORD=password-for-ds923
 SYNOLOGY_NAS1_SECURE=true
+SYNOLOGY_NAS1_CERT_VERIFY=false
 SYNOLOGY_NAS1_DSM_VERSION=7
 
+# === Secondary NAS ===
 SYNOLOGY_NAS2_NAME=ds517
 SYNOLOGY_NAS2_HOST=192.168.1.101
 SYNOLOGY_NAS2_PORT=5001
-SYNOLOGY_NAS2_USERNAME=admin
-SYNOLOGY_NAS2_PASSWORD=password2
+SYNOLOGY_NAS2_USERNAME=mcp-service
+SYNOLOGY_NAS2_PASSWORD=password-for-ds517
 SYNOLOGY_NAS2_SECURE=true
+SYNOLOGY_NAS2_CERT_VERIFY=false
 SYNOLOGY_NAS2_DSM_VERSION=7
 
+# === Server Settings ===
 SYNOLOGY_DEFAULT_NAS=ds923
+SYNOLOGY_LOG_LEVEL=INFO
 ```
 
-### Two-Factor Authentication
+#### Two-Factor Authentication
 
 If a NAS has 2FA enabled, provide the current OTP code:
 
@@ -108,24 +151,42 @@ If a NAS has 2FA enabled, provide the current OTP code:
 SYNOLOGY_NAS1_OTP_CODE=123456
 ```
 
-Note: OTP codes expire quickly. For persistent use, consider creating a dedicated service account without 2FA.
+Note: OTP codes expire quickly. For persistent MCP use, create a dedicated service account without 2FA.
 
-## Usage
+### Step 3: Test the connection
 
-### With Claude Desktop
+```bash
+source .venv/bin/activate
+synology-mcp
+```
 
-Add to your Claude Desktop MCP configuration (`claude_desktop_config.json`):
+If it starts without errors, the server is ready. Press `Ctrl+C` to stop it.
+
+## Claude Desktop Setup
+
+### Step 1: Locate the config file
+
+The Claude Desktop MCP configuration file is located at:
+
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+If the file doesn't exist yet, create it.
+
+### Step 2: Add the Synology MCP server
+
+Open the config file and add (or merge into) the `mcpServers` section. You must use the **full absolute path** to the `synology-mcp` binary inside your venv:
 
 ```json
 {
   "mcpServers": {
     "synology": {
-      "command": "synology-mcp",
+      "command": "/Users/dimka/dk-synology-mcp/.venv/bin/synology-mcp",
       "env": {
         "SYNOLOGY_NAS1_NAME": "ds923",
         "SYNOLOGY_NAS1_HOST": "192.168.1.100",
         "SYNOLOGY_NAS1_PORT": "5001",
-        "SYNOLOGY_NAS1_USERNAME": "admin",
+        "SYNOLOGY_NAS1_USERNAME": "mcp-service",
         "SYNOLOGY_NAS1_PASSWORD": "your-password",
         "SYNOLOGY_NAS1_SECURE": "true",
         "SYNOLOGY_NAS1_CERT_VERIFY": "false",
@@ -137,31 +198,77 @@ Add to your Claude Desktop MCP configuration (`claude_desktop_config.json`):
 }
 ```
 
-### With Docker
+For multi-NAS, add the second NAS variables in the same `env` block:
+
+```json
+{
+  "mcpServers": {
+    "synology": {
+      "command": "/Users/dimka/dk-synology-mcp/.venv/bin/synology-mcp",
+      "env": {
+        "SYNOLOGY_NAS1_NAME": "ds923",
+        "SYNOLOGY_NAS1_HOST": "192.168.1.100",
+        "SYNOLOGY_NAS1_PORT": "5001",
+        "SYNOLOGY_NAS1_USERNAME": "mcp-service",
+        "SYNOLOGY_NAS1_PASSWORD": "password-for-ds923",
+        "SYNOLOGY_NAS1_SECURE": "true",
+        "SYNOLOGY_NAS1_CERT_VERIFY": "false",
+        "SYNOLOGY_NAS1_DSM_VERSION": "7",
+        "SYNOLOGY_NAS2_NAME": "ds517",
+        "SYNOLOGY_NAS2_HOST": "192.168.1.101",
+        "SYNOLOGY_NAS2_PORT": "5001",
+        "SYNOLOGY_NAS2_USERNAME": "mcp-service",
+        "SYNOLOGY_NAS2_PASSWORD": "password-for-ds517",
+        "SYNOLOGY_NAS2_SECURE": "true",
+        "SYNOLOGY_NAS2_CERT_VERIFY": "false",
+        "SYNOLOGY_NAS2_DSM_VERSION": "7",
+        "SYNOLOGY_DEFAULT_NAS": "ds923"
+      }
+    }
+  }
+}
+```
+
+**Important notes:**
+
+- Replace `/Users/dimka/dk-synology-mcp` with the actual path where you cloned the repo.
+- If you already have other MCP servers configured, merge the `"synology"` entry into your existing `mcpServers` object — don't replace the whole file.
+- Use the full path to the venv binary (`.venv/bin/synology-mcp`), not just `synology-mcp`, because Claude Desktop doesn't activate your shell profile or venv.
+
+### Step 3: Restart Claude Desktop
+
+Quit Claude Desktop completely and reopen it. The Synology MCP server will appear in the MCP tools list (look for the hammer icon at the bottom of the chat input).
+
+### Step 4: Verify it works
+
+Try asking Claude:
+
+- "Test my Synology NAS connection"
+- "Show my NAS health dashboard"
+- "List files in /volume1/homes"
+- "What Docker containers are running on my NAS?"
+
+## Usage with Docker
+
+### Build and run (stdio transport)
 
 ```bash
-# Build and run with stdio (default)
 docker compose up -d
+```
 
-# Or build manually
+### Build and run manually
+
+```bash
 docker build -t synology-mcp .
 docker run --env-file .env -i synology-mcp
 ```
 
-To use SSE transport (network-accessible), uncomment the relevant lines in `docker-compose.yml` or run:
+### SSE transport (network-accessible)
+
+Uncomment the relevant lines in `docker-compose.yml`, or run:
 
 ```bash
 docker run --env-file .env -p 8080:8080 synology-mcp --transport sse --port 8080
-```
-
-### Direct CLI
-
-```bash
-# Run with stdio transport (default)
-synology-mcp
-
-# Run with SSE transport
-synology-mcp --transport sse --port 8080
 ```
 
 ## Multi-NAS Usage
@@ -180,7 +287,7 @@ Use `synology_list_connections` to see all configured NAS units and their active
 ## Project Structure
 
 ```
-synology-mcp/
+dk-synology-mcp/
 ├── pyproject.toml
 ├── Dockerfile
 ├── docker-compose.yml
@@ -211,6 +318,31 @@ synology-mcp/
             ├── active_backup.py    # Active Backup (6 tools)
             └── system_tools.py     # NAS connections (4 tools)
 ```
+
+## Troubleshooting
+
+### "command not found: synology-mcp"
+
+You're not using the venv. Either activate it first (`source .venv/bin/activate`) or use the full path: `.venv/bin/synology-mcp`.
+
+### "Connection refused" or timeout errors
+
+- Verify your NAS IP is reachable: `ping 192.168.1.100`
+- Verify the port is open: `curl -k https://192.168.1.100:5001`
+- Check that DSM's HTTP/HTTPS service is enabled in Control Panel > Login Portal
+- If using HTTPS with a self-signed cert, make sure `CERT_VERIFY=false`
+
+### "Permission denied" or "Invalid credentials"
+
+- Double-check the username and password in your `.env` or Claude Desktop config
+- Ensure the user account is in the `administrators` group
+- If 2FA is enabled on the account, either provide `OTP_CODE` or use a service account without 2FA
+
+### Claude Desktop doesn't show Synology tools
+
+- Make sure the `command` path in `claude_desktop_config.json` is the **full absolute path** to `.venv/bin/synology-mcp`
+- Quit and fully restart Claude Desktop (not just close the window)
+- Check Claude Desktop logs: `~/Library/Logs/Claude/` (macOS)
 
 ## Dependencies
 
