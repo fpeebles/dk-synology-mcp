@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0.0",
+  "identity": {
+    "org": "DRVBSS",
+    "name": "dk-synology-mcp",
+    "description": "Comprehensive Synology NAS management through the Model Context Protocol — 87 tools across 15 service categories",
+    "type": "service",
+    "language": "Python 3.10+",
+    "framework": "FastMCP (mcp SDK), synology-api, Pydantic",
+    "default_branch": "main"
+  },
+  "purpose": "MCP server providing 87 tools for managing Synology NAS: file operations, downloads, backups, Docker, photos, VMs, snapshots, scheduled tasks, users/groups, shared folders, packages, cloud sync, active backup, and system monitoring. Multi-NAS support (up to 9 units).",
+  "status": {
+    "phase": "v0.3.0 — runtime bug fixes complete",
+    "health": "green",
+    "summary": "All 87 tools verified against live DS923+ on DSM 7. Method name audit complete. Task handling, shared folders, and system tools fixed."
+  },
+  "owners": {
+    "product": ["DRVBSS"],
+    "technical": ["DRVBSS"]
+  },
+  "structure": {
+    "src/synology_mcp/server.py": "FastMCP server entry point",
+    "src/synology_mcp/utils/config.py": "Environment config loader",
+    "src/synology_mcp/utils/connection.py": "Multi-NAS ConnectionManager",
+    "src/synology_mcp/utils/formatters.py": "Response formatting helpers",
+    "src/synology_mcp/tools/": "15 tool files — filestation, sysinfo, downloadstation, cloudsync, backup, docker_tools, task_scheduler, photos, package, users_groups, shares, virtualization, snapshot, active_backup, system_tools"
+  },
+  "build": {
+    "runtime": ["Python 3.10+"],
+    "commands": {
+      "install": "pip install .",
+      "install_dev": "pip install -e '.[dev]'",
+      "run": "synology-mcp",
+      "docker_run": "docker compose up -d"
+    }
+  },
+  "deployment": {
+    "stdio": {
+      "notes": "Default transport — used by Claude Desktop and Claude Code via MCP config"
+    },
+    "sse": {
+      "port": 8080,
+      "notes": "Network-accessible SSE transport via Docker"
+    }
+  },
+  "interfaces": [
+    { "type": "mcp", "name": "Synology MCP", "summary": "87 MCP tools across 15 categories: file (16), system (6), download (8), cloudsync (5), backup (5), docker (8), tasks (5), photos (4), packages (4), users (4), shares (3), VMs (5), snapshots (4), active backup (6), system tools (4)" }
+  ],
+  "tools": [
+    {
+      "name": "synology-mcp",
+      "type": "mcp-server",
+      "purpose": "Synology NAS management via Model Context Protocol",
+      "commands": {
+        "run_stdio": "synology-mcp",
+        "run_sse": "synology-mcp --transport sse --port 8080"
+      }
+    }
+  ],
+  "security": {
+    "auth_model": "NAS credentials via environment variables, optional 2FA OTP",
+    "sensitive_paths": [".env"],
+    "trust_boundaries": [
+      "NAS credentials stored in .env or Claude Desktop config — never committed",
+      "Admin or delegated admin account required on each NAS",
+      "HTTPS with optional cert verification (self-signed common on home NAS)"
+    ]
+  },
+  "relationships": {},
+  "hard_rules": [
+    "Every tool accepts optional 'nas' parameter — default NAS used if omitted",
+    "NEVER commit .env with NAS credentials",
+    "MIT licensed — open source"
+  ],
+  "last_verified": {
+    "at": "2026-04-11T23:30:00Z",
+    "by": "claude"
+  }
+}
