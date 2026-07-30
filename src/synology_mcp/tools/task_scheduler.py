@@ -31,6 +31,18 @@ class TaskSchedulerEnableInput(BaseModel):
     nas: Optional[str] = Field(default=None, description="NAS name")
 
 
+
+def _task_real_owner(ts, task_id: int) -> str:
+    """Look up a task's real_owner from the task list (API requires it)."""
+    try:
+        result = ts.get_task_list(limit=500)
+        for t in result.get("data", {}).get("tasks", []):
+            if t.get("id") == task_id:
+                return t.get("real_owner") or t.get("owner") or "root"
+    except Exception:
+        pass
+    return "root"
+
 def register_task_scheduler_tools(mcp, conn_mgr) -> None:
     """Register Task Scheduler tools."""
 
@@ -72,7 +84,7 @@ def register_task_scheduler_tools(mcp, conn_mgr) -> None:
         """Get detailed info about a specific scheduled task."""
         try:
             ts = _ts(params.nas)
-            result = ts.get_task_config(task_id=params.task_id)
+            result = ts.get_task_config(task_id=params.task_id, real_owner=_task_real_owner(ts, params.task_id))
             if not result or "data" not in result:
                 return error_response(f"Task {params.task_id} not found")
             return json.dumps(result["data"], indent=2, default=str)
@@ -87,7 +99,7 @@ def register_task_scheduler_tools(mcp, conn_mgr) -> None:
         """Trigger immediate execution of a scheduled task."""
         try:
             ts = _ts(params.nas)
-            result = ts.task_run(task_id=params.task_id)
+            result = ts.task_run(task_id=params.task_id, real_owner=_task_real_owner(ts, params.task_id))
             return json.dumps({"status": "success", "action": "triggered", "task_id": params.task_id}, indent=2)
         except Exception as e:
             return handle_synology_error(e, "Run task")

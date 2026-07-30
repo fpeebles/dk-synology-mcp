@@ -116,7 +116,7 @@ def register_downloadstation_tools(mcp, conn_mgr) -> None:
         """
         try:
             ds = _ds(params.nas)
-            kwargs = {"uri": params.uri}
+            kwargs = {"url": params.uri}
             if params.destination:
                 kwargs["destination"] = params.destination
             result = ds.create_task(**kwargs)
